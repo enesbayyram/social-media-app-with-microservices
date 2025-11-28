@@ -1,0 +1,51 @@
+stages:
+  - build
+  - dockerized
+  - deploy
+
+variables:
+  CI_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+build_stage:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-17
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+
+
+dockerized_stage:
+  stage: dockerized
+  image: docker:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  services:
+    - docker:dind
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker build -t $CI_IMAGE_NAME .
+    - docker push $CI_IMAGE_NAME
+
+
+
+deploy_stage:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [ "" ]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    # Base64 decode edip kubeconfig.yaml oluştur
+    - echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig.yaml
+    # KUBECONFIG env set et
+    - export KUBECONFIG=/tmp/kubeconfig.yaml
+    # Secret oluştur/güncelle
+    - kubectl create secret docker-registry gitlab-registry-secret --docker-server=$CI_REGISTRY --docker-username=$K3S_SECRET_USERNAME --docker-password=$K3S_SECRET_PASSWORD -n social-media --dry-run=client -o yaml | kubectl apply -f -
+    # Namespace ayarla
+    - kubectl config set-context --current --namespace=social-media
+    # Deployment image güncelle
+    - kubectl set image deployment/dep-config-server dep-config-server=$CI_IMAGE_NAME --record
+    - kubectl rollout status deployment/dep-config-server

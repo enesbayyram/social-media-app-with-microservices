@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: sm-post-manager
+  cloud:
+    config:
+      uri: http://localhost:8888/sm-config-server
+      fail-fast: true
+
+
+
+

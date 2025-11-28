@@ -1,0 +1,6 @@
+Core olabilmesi için
+******************************************
+1-Starterı silebilirsin çünkü diğer projelere bağımlılık olarak gidecek gerek yok
+2-Test içerisinde SpringBootTest anastasyonunu kaldır çünkü profil vs arıyor
+3-pom.xml içerisinde spring boot maven plugini kaldır . Çünkü o projeyi derlemeye çalışıyor.
+4-application.properties dosyası olmamalı config-server da application name değerini bozuyor.

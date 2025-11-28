@@ -1,0 +1,87 @@
+stages:
+  - build
+  - dockerized
+  - deploy
+
+variables:
+  CI_IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+
+cache:
+  key: maven-cache
+  paths:
+    - .m2/repository
+
+
+
+build_stage:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-17
+  before_script:
+    - mkdir -p ~/.m2
+    - echo "<settings>
+      <servers>
+      <server>
+      <id>gitlab-maven-core</id>
+      <username>${K3S_SECRET_USERNAME}</username>
+      <password>${K3S_SECRET_PASSWORD}</password>
+      </server>
+      <server>
+      <id>gitlab-maven-client</id>
+      <username>${K3S_SECRET_USERNAME}</username>
+      <password>${K3S_SECRET_PASSWORD}</password>
+      </server>
+      </servers>
+      </settings>" > ~/.m2/settings.xml
+
+  script:
+    - mvn -Dmaven.repo.local=.m2/repository clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+
+dockerized_stage:
+  stage: dockerized
+  image: docker:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  services:
+    - docker:dind
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker build -t $CI_IMAGE_NAME .
+    - docker push $CI_IMAGE_NAME
+
+
+
+deploy_stage:
+  stage: deploy
+  image:
+    name: alpine/k8s:1.29.0
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    # kubeconfig.yaml oluştur
+    - echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig.yaml
+    - export KUBECONFIG=/tmp/kubeconfig.yaml
+
+    # Docker secret oluştur veya güncelle
+    - |
+      kubectl create secret docker-registry gitlab-registry-secret \
+        --docker-server=$CI_REGISTRY \
+        --docker-username=$K3S_SECRET_USERNAME \
+        --docker-password=$K3S_SECRET_PASSWORD \
+        -n social-media \
+        --dry-run=client -o yaml > secret.yaml
+
+    - kubectl apply --validate=false -f secret.yaml
+
+    # Namespace ayarla
+    - kubectl config set-context --current --namespace=social-media
+
+    # Deployment image güncelle
+    - kubectl set image deployment/dep-security-manager dep-security-manager=$CI_IMAGE_NAME --record
+    - kubectl rollout status deployment/dep-security-manager
+
+

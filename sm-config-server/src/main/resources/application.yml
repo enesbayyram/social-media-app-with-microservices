@@ -1,0 +1,12 @@
+server:
+  port: 8888
+  servlet:
+    context-path: /sm-config-server
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://gitlab.com/social-media-app-group/config-repo.git
+          username: enesbayyram
+          password: glpat-pc6XNik4k9_hCJNKg5-CW286MQp1OmhtZmJnCw.01.120xkhhv3

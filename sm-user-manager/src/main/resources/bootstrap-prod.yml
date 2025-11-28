@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: sm-user-manager
+  cloud:
+    config:
+      uri: http://svc-config-server:8888/sm-config-server
+      fail-fast: true
