@@ -5,9 +5,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:oracle:thin:@//209.126.81.74:1521/ORCLPDB1
-    username: SOCIAL_MEDIA
-    password: Pr0dDb!7kV4zRn%
+    url: jdbc:oracle:thin:@//XX:1521/XX
+    username: XX
+    password: XX
     driver-class-name: oracle.jdbc.OracleDriver
 
 sm:
