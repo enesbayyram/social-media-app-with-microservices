@@ -1,0 +1,36 @@
+server:
+  port: 8001
+  servlet:
+    context-path: /sm-security-manager
+
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@//209.126.81.74:1521/ORCLPDB1
+    username: SOCIAL_MEDIA
+    password: Pr0dDb!7kV4zRn%
+    driver-class-name: oracle.jdbc.OracleDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.OracleDialect
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: SOCIAL_MEDIA
+  cloud:
+    config:
+      failFast: false
+      retry:
+        maxAttempts: 10
+        initialInterval: 3000
+        multiplier: 1.5
+        maxInterval: 30000
+logging:
+  level:
+    # Config Client logları
+    org.springframework.cloud.config.client: DEBUG
+    # HTTP request/response detayları
+    org.springframework.web: DEBUG
+    org.apache.http: DEBUG
